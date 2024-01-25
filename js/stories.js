@@ -12,16 +12,67 @@ async function getAndShowStoriesOnStart() {
   putStoriesOnPage();
 }
 
-/**
- * A render method to render HTML for an individual Story instance
- * - story: an instance of Story
- *
- * Returns the markup for the story.
- */
+function validateStoryInput(title, author, url) {
+  if (!title.trim()) {
+    return { isValid: false, message: "Title is required." };
+  }
+  if (!author.trim()) {
+    return { isValid: false, message: "Author is required." };
+  }
+  if (!url.trim()) {
+    return { isValid: false, message: "URL is required." };
+  }
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return { isValid: false, message: "URL must start with http:// or https://." };
+  }
+  return { isValid: true };
+}
+
+function createFormToSubmit() {
+  const $form = $("<form id='form'>");
+  $form.append('<input type="text" id="title" placeholder="title">');
+  $form.append('<input type="text" id="author" placeholder="author">');
+  $form.append('<input type="text" id="url" placeholder="url">');
+  $form.append("<button type='submit'>Submit</button>");
+  
+  $body.append($form);
+
+  $form.on("submit", async function(event){
+    event.preventDefault();
+    hidePageComponents();
+    $("#form").show();
+    const titleVal = $("#title").val();
+    const authorVal = $("#author").val();
+    let urlVal = $("#url").val();
+    
+    const validateStory = validateStoryInput(titleVal, authorVal, urlVal);
+    if (!validateStory.isValid) {
+      alert(validateStory.message);
+      $('#title').val('');
+      $('#author').val('');
+      $('#url').val('');
+      return;
+    }
+
+    if (storyList) {
+      try {
+        await storyList.addStory(currentUser, {title: titleVal, author: authorVal, url: urlVal});
+        alert("Story successfully added.");
+        $('#title').val('');
+        $('#author').val('');
+        $('#url').val('');
+    } catch(err){
+        console.error("Issues adding story from the form", err);
+      }
+    } else {
+      console.error("Story list is not initialized.");
+    }
+  });
+  $body.append($form);
+}
+
 
 function generateStoryMarkup(story) {
-  // console.debug("generateStoryMarkup", story);
-
   const hostName = story.getHostName();
   return $(`
       <li id="${story.storyId}">
@@ -35,14 +86,11 @@ function generateStoryMarkup(story) {
     `);
 }
 
-/** Gets list of stories from server, generates their HTML, and puts on page. */
-
 function putStoriesOnPage() {
   console.debug("putStoriesOnPage");
 
   $allStoriesList.empty();
 
-  // loop through all of our stories and generate HTML for them
   for (let story of storyList.stories) {
     const $story = generateStoryMarkup(story);
     $allStoriesList.append($story);

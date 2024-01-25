@@ -4,7 +4,6 @@ const BASE_URL = "https://hack-or-snooze-v3.herokuapp.com";
 
 class Story {
 
-
   constructor({ storyId, title, author, url, username, createdAt }) {
     this.storyId = storyId;
     this.title = title;
@@ -43,18 +42,17 @@ class StoryList {
       const token = user.loginToken;
       const response = await axios.post(`${BASE_URL}/stories`, {
         token: token,
-        story: { title, author, url }
+        story: {title, author, url}
       });
   
-      console.log("Token : ", token);
       const story = new Story(response.data.story);
       this.stories.unshift(story);
       user.ownStories.unshift(story);
-      console.log("story added successfully!");
-  
+      
       return story;
     } catch(err) {
       console.error("Error adding story : ", err);
+      console.log("Error response = ", err.response);
     }
   }
 }
