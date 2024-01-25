@@ -13,6 +13,7 @@ const $signupForm = $("#signup-form");
 const $navLogin = $("#nav-login");
 const $navUserProfile = $("#nav-user-profile");
 const $navLogOut = $("#nav-logout");
+const $submitButton = $("#nav-submit");
 
 
 function hidePageComponents() {
@@ -24,16 +25,14 @@ function hidePageComponents() {
   components.forEach(c => c.hide());
 }
 
-/** Overall function to kick off the app. */
 
 async function start() {
   console.debug("start");
 
-  // "Remember logged-in user" and log in, if credentials in localStorage
   await checkForRememberedUser();
   await getAndShowStoriesOnStart();
+  createSubmitButton();
 
-  // if we got a logged-in user
   if (currentUser) updateUIOnUserLogin();
 }
 
