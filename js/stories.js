@@ -1,14 +1,13 @@
 "use strict";
 
-// This is the global list of the stories, an instance of StoryList
 let storyList;
+let storiesIds = [];
 
-/** Get and show stories when site first loads. */
 
 async function getAndShowStoriesOnStart() {
   storyList = await StoryList.getStories();
   $storiesLoadingMsg.remove();
-
+  $('.account-forms-container.container').hide();
   putStoriesOnPage();
 }
 
@@ -29,14 +28,12 @@ function validateStoryInput(title, author, url) {
 }
 
 function createFormToSubmit() {
-  const $form = $("<form id='form'>");
+  const $form = $("<form id='submit-form'>");
   $form.append('<input type="text" id="title" placeholder="title">');
   $form.append('<input type="text" id="author" placeholder="author">');
   $form.append('<input type="text" id="url" placeholder="url">');
   $form.append("<button type='submit'>Submit</button>");
   
-  $body.append($form);
-
   $form.on("submit", async function(event){
     event.preventDefault();
     hidePageComponents();
@@ -46,36 +43,38 @@ function createFormToSubmit() {
     let urlVal = $("#url").val();
     
     const validateStory = validateStoryInput(titleVal, authorVal, urlVal);
-    if (!validateStory.isValid) {
+    if (!validateStory.isValid) { // error handling
       alert(validateStory.message);
       $('#title').val('');
       $('#author').val('');
       $('#url').val('');
       return;
     }
-
     if (storyList) {
       try {
-        await storyList.addStory(currentUser, {title: titleVal, author: authorVal, url: urlVal});
+        const story = await storyList.addStory(currentUser, {title: titleVal, author: authorVal, url: urlVal});
         alert("Story successfully added.");
         $('#title').val('');
         $('#author').val('');
         $('#url').val('');
+        let storiesIds = JSON.parse(localStorage.getItem(currentUser.username)) || [];
+        storiesIds.push(story.storyId);
+        localStorage.setItem(currentUser.username, JSON.stringify(storiesIds));
+        console.log("Story ID stored in local storage: ", story.storyId);
     } catch(err){
         console.error("Issues adding story from the form", err);
       }
     } else {
       console.error("Story list is not initialized.");
     }
-  });
-  $body.append($form);
+  })
+  $('<section class="submit-story">').append($form).appendTo('.stories-container');
 }
-
 
 function generateStoryMarkup(story) {
   const hostName = story.getHostName();
   return $(`
-      <li id="${story.storyId}">
+      <li id="${story.storyId}" data-story-id="${story.storyId}">
         <a href="${story.url}" target="a_blank" class="story-link">
           ${story.title}
         </a>
@@ -95,6 +94,64 @@ function putStoriesOnPage() {
     const $story = generateStoryMarkup(story);
     $allStoriesList.append($story);
   }
-
+  //addStarToStories();
+  //addDeleteIconToStories();
   $allStoriesList.show();
+}
+
+
+function addStarToStories() {
+  if (!currentUser) {
+    return;
+  }
+  const $stories = $('.stories-list').children();
+  for (let story of $stories) {
+    if ($(story).find('i.far.fa-star').length > 0) {
+      continue;
+    }
+    const $star = $('<i>', {
+      class: 'far fa-star'
+    });
+    const storyId = $(story).attr('id');
+    if (currentUser.favorites.find(s => s.storyId === storyId)) {
+      $star.addClass('favorited');
+    }
+    $star.on('click', async function(){
+      const storyId = $(story).attr('id');
+      if ($star.hasClass('favorited')) {
+        await currentUser.removeFavorite(storyId);
+        $star.removeClass('favorited');
+      } else {
+        await currentUser.addFavorite(storyId);
+        $star.addClass('favorited');
+      }
+    });
+    $(story).append($star);
+  }
+}
+
+function addDeleteIconToStories() {
+  if (!currentUser) {
+    return;
+  }
+  const $stories = $('.stories-list').children();
+  for (let story of $stories) { 
+    const $deleteIcon = $('<i>', {
+      class: 'fas fa-times-circle'
+    });
+    $(story).append($deleteIcon);
+  }
+
+  $('.stories-list').on('click', '.fa-times-circle', async function(){
+    console.log('Delete icon clicked!');
+    const storyId = $(this).parent().attr('id');
+    await storyList.removeStory(currentUser, storyId);
+    $(this).parent().remove();
+    let storiesIds = JSON.parse(localStorage.getItem(currentUser.username)) || [];
+    const index = storiesIds.indexOf(storyId);
+    if (index !== -1) {
+      storiesIds.splice(index, 1);
+      localStorage.setItem(currentUser.username, JSON.stringify(storiesIds));
+    }
+  });
 }

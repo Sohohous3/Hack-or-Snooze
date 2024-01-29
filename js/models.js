@@ -32,7 +32,6 @@ class StoryList {
       return new StoryList(stories);
     } catch(err) {
       console.error("Error retrieving stories!", err);
-
       return null;
     }
   }
@@ -53,6 +52,32 @@ class StoryList {
     } catch(err) {
       console.error("Error adding story : ", err);
       console.log("Error response = ", err.response);
+    }
+  }
+
+  async getStoriesById(storyId) {
+    try {
+      const response = await axios.get(`${BASE_URL}/stories/${storyId}`);
+      const story = new Story(response.data.story);
+      console.log("Story ID retrieved successfully!");
+      return story;
+    } catch(err) {
+      console.error("Error retrieving story by ID : ", err);
+    }
+  }
+
+  async removeStory(currentUser, storyId) {
+    try {
+      await axios.delete(`${BASE_URL}/stories/${storyId}`, {
+        data: {
+          token: currentUser.loginToken
+        }
+      });
+      currentUser.ownStories = currentUser.ownStories.filter(s => s.storyId !== storyId);
+      currentUser.favorites = currentUser.favorites.filter(s => s.storyId !== storyId);
+      storyList.stories = storyList.stories.filter(s => s.storyId !== storyId);
+    } catch(err) {
+      console.error("Error removing story!", err);
     }
   }
 }
@@ -156,16 +181,45 @@ class User {
     }
   }
 
-  async addFavorite() {
-    // 
+  async addFavorite(storyId) {
+    if (this.favorites.some(story => story.storyId === storyId)) {
+      console.log("Story already in favorites!");
+      return;
+    }
+    try {
+      await axios.post(`${BASE_URL}/users/${this.username}/favorites/${storyId}`, {
+        token: this.loginToken
+      });
+      this.favorites.push(storyId);
+    } catch (err) {
+      console.error("Error Adding Favorite : ", err);
+    }
   }
 
-  async removeFavorite() {
-    //
+  async removeFavorite(storyId) {
+    try {
+      await axios.delete(`${BASE_URL}/users/${this.username}/favorites/${storyId}`, {
+        data: { 
+          token: this.loginToken
+         }
+      });
+      this.favorites = this.favorites.filter(story => story.storyId !== storyId);
+    } catch(err){
+      console.error("Error removing story from favorite.", err);
+    }
   }
 
   async showFavorites() {
-    // 
+    try {
+      const response = await axios.get(`${BASE_URL}/users/${this.username}`, {
+        params: {
+          token: this.loginToken
+         }
+      });
+      this.favorites = response.data.user.favorites.map(s => new Story(s));
+      return this.favorites;
+    } catch(err) {
+      console.error("Error showing favorites!", err);
+    }
   }
-
 }

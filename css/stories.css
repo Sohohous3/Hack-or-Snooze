@@ -37,3 +37,7 @@
 .story-user {
   display: block;
 }
+
+.favorited {
+  color: orange !important;
+}

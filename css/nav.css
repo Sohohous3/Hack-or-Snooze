@@ -11,23 +11,25 @@ nav {
 
 .navbar-brand {
   display: flex;
-  font-weight: bold;
   align-items: center;
-  justify-content: space-between;
-}
-
-.navbar-brand #nav-submit {
-  margin-left: 10px;
-  font-weight: normal;
-  margin-left: 50px;
-}
-
-.nav-link {
+  justify-content: space-evenly;
   font-size: 0.85rem;
   margin: 0 3px;
+}
+
+#nav-all {
+  font-weight: bold;
 }
 
 .nav-right {
   margin-left: auto;
   text-align: right;
+}
+
+#nav-favorites #nav-submit #nav-my-stories {
+  font-weight: normal;
+}
+
+nav a {
+  margin-right: 4px;
 }
