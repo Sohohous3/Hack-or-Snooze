@@ -27,6 +27,7 @@ function validateStoryInput(title, author, url) {
   return { isValid: true };
 }
 
+
 function createFormToSubmit() {
   const $form = $("<form id='submit-form'>");
   $form.append('<input type="text" id="title" placeholder="title">');
@@ -57,10 +58,13 @@ function createFormToSubmit() {
         $('#title').val('');
         $('#author').val('');
         $('#url').val('');
+
+        storyList.stories.unshift(story);
+        const $newStory = generateStoryMarkup(story);
+        $allStoriesList.prepend($newStory);
         let storiesIds = JSON.parse(localStorage.getItem(currentUser.username)) || [];
         storiesIds.push(story.storyId);
         localStorage.setItem(currentUser.username, JSON.stringify(storiesIds));
-        console.log("Story ID stored in local storage: ", story.storyId);
     } catch(err){
         console.error("Issues adding story from the form", err);
       }
@@ -73,16 +77,52 @@ function createFormToSubmit() {
 
 function generateStoryMarkup(story) {
   const hostName = story.getHostName();
-  return $(`
-      <li id="${story.storyId}" data-story-id="${story.storyId}">
-        <a href="${story.url}" target="a_blank" class="story-link">
-          ${story.title}
-        </a>
-        <small class="story-hostname">(${hostName})</small>
-        <small class="story-author">by ${story.author}</small>
-        <small class="story-user">posted by ${story.username}</small>
-      </li>
-    `);
+  const $storyMarkup = $(`
+    <li id="${story.storyId}" data-story-id="${story.storyId}">
+      <a href="${story.url}" target="a_blank" class="story-link">
+        ${story.title}
+      </a>
+      <small class="story-hostname">(${hostName})</small>
+      <small class="story-author">by ${story.author}</small>
+      <small class="story-user">posted by ${story.username}</small>
+    </li>
+  `);
+
+  if (currentUser) {
+    const $star = $('<i>', { class: 'far fa-star' });
+    if (currentUser.favorites.find(s => s.storyId === story.storyId)) {
+      $star.addClass('favorited');
+    }
+    $star.on('click', async function() {
+      const storyId = $(this).parent().attr('data-story-id');
+      if ($star.hasClass('favorited')) {
+        await currentUser.removeFavorite(storyId);
+        $star.removeClass('favorited');
+      } else {
+        await currentUser.addFavorite(storyId);
+        $star.addClass('favorited');
+      }
+    });
+    $storyMarkup.append($star);
+  }
+
+  if (currentUser && story.username === currentUser.username) {
+    const $deleteIcon = $('<i>', { class: 'fas fa-times-circle' });
+    $deleteIcon.on('click', async function() {
+      const storyId = $(this).parent().attr('data-story-id');
+      await storyList.removeStory(currentUser, storyId);
+      $(this).parent().remove();
+      let storiesIds = JSON.parse(localStorage.getItem(currentUser.username)) || [];
+      const index = storiesIds.indexOf(storyId);
+      if (index !== -1) {
+        storiesIds.splice(index, 1);
+        localStorage.setItem(currentUser.username, JSON.stringify(storiesIds));
+      }
+
+});
+$storyMarkup.append($deleteIcon);
+}
+return $storyMarkup;
 }
 
 function putStoriesOnPage() {
@@ -94,8 +134,6 @@ function putStoriesOnPage() {
     const $story = generateStoryMarkup(story);
     $allStoriesList.append($story);
   }
-  //addStarToStories();
-  //addDeleteIconToStories();
   $allStoriesList.show();
 }
 

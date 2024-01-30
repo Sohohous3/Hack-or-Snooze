@@ -78,6 +78,4 @@ function updateUIOnUserLogin() {
   updateNavOnLogin();
   $('#nav-favorites').css('display', 'block');
   $('#nav-my-stories').css('display', 'block');
-  addStarToStories();
-  addDeleteIconToStories();
 }

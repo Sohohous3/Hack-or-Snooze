@@ -126,9 +126,9 @@ function createMyStoriesButton() {
     console.log('Story Ids retrieved from local storage: ', storiesIds)
     for (let storyId of storiesIds) {
       const story = await storyList.getStoriesById(storyId);
-      console.log('Story retrieved from database: ', story); // Debug statement
+      console.log('Story retrieved from database: ', story);
       const $story = generateStoryMarkup(story);
-      console.log('Story markup: ', $story); // Debug statement
+      console.log('Story markup: ', $story);
       $myStoriesContainer.append($story);
     }
     $myStoriesContainer.show();
